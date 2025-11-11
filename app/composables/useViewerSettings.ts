@@ -15,32 +15,41 @@ export const useViewerSettings = (totalPages: Ref<number>) => {
   // Toggle first page as cover
   const setFirstPageAsCover = (cover: boolean) => {
     firstPageAsCover.value = cover;
+
+    if (viewMode.value !== "single") {
+      if (firstPageAsCover.value && currentPage.value % 2 === 0) {
+        // If enabling cover and currently on an even page in double-page mode, move to previous page
+        goToPage(currentPage.value + 1);
+        return;
+      }
+
+      // If disabling cover and currently on page 1 in double-page mode, move to page 2
+      if (!firstPageAsCover.value && currentPage.value === 1) {
+        goToPage(2);
+        return;
+      }
+    }
   };
 
   // Navigation
   const goToPage = (pageNum: number) => {
+    if (firstPageAsCover.value && viewMode.value !== "single" && pageNum % 2 === 0) {
+      pageNum += 1; // Adjust to odd page if first page is cover and in double-page mode
+    }
     currentPage.value = Math.min(Math.max(pageNum, 1), totalPages.value);
   };
 
   const nextPage = () => {
-    if (currentPage.value === 1 && firstPageAsCover.value) {
-      goToPage(2);
-      return;
-    } else if (viewMode.value === "single") {
+    if (viewMode.value === "single") {
       goToPage(currentPage.value + 1);
-      return;
     } else {
       goToPage(currentPage.value + 2);
     }
   };
 
   const previousPage = () => {
-    if (currentPage.value === 2 && firstPageAsCover.value) {
-      goToPage(1);
-      return;
-    } else if (viewMode.value === "single") {
+    if (viewMode.value === "single") {
       goToPage(currentPage.value - 1);
-      return;
     } else {
       goToPage(currentPage.value - 2);
     }
@@ -98,12 +107,11 @@ export const useViewerSettings = (totalPages: Ref<number>) => {
   const getPagesToDisplay = (totalPages: number) => {
     if (viewMode.value === "single") {
       return [currentPage.value];
-    }
-
-    // Double page modes
-    if (firstPageAsCover.value && currentPage.value === 1) {
+    } else if (firstPageAsCover.value && currentPage.value === 1) {
       return [1];
-    } else return [currentPage.value, currentPage.value + 1];
+    } else {
+      return [currentPage.value - 1, currentPage.value];
+    }
   };
 
   const reset = () => {
