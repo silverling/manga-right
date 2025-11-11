@@ -65,13 +65,10 @@ const renderPage = async () => {
 };
 
 onMounted(async () => {
-  console.log("PDFCanvas mounted", props.pageNum);
   await renderPage();
 });
 
 onUnmounted(() => {
-  console.log("PDFCanvas unmounted", props.pageNum);
-
   // Cancel any ongoing render operation
   if (renderTask) {
     renderTask.cancel();
@@ -82,7 +79,6 @@ onUnmounted(() => {
 watch(
   () => [props.pageNum, props.zoomMode, props.customZoom, props.containerWidth, props.containerHeight],
   async () => {
-    console.log("PDFCanvas props changed", props.pageNum);
     await renderPage();
   }
 );
