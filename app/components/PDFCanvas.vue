@@ -1,12 +1,12 @@
 <template>
-  <div class="pdf-canvas-container">
-    <canvas ref="canvas"></canvas>
+  <div class="flex justify-center items-center">
+    <canvas ref="canvas" class="max-w-full h-auto"></canvas>
   </div>
 </template>
 
 <script setup lang="ts">
 import type { PDFPageProxy, RenderTask } from "pdfjs-dist";
-import type { ZoomMode } from "~/composables/useViewerSettings";
+import type { ZoomMode } from "@/composables/useViewerSettings";
 
 const props = defineProps<{
   pageNum: number;
@@ -19,9 +19,19 @@ const props = defineProps<{
 
 const canvas = ref<HTMLCanvasElement>();
 let renderTask: RenderTask | null = null;
+let watchHandle: ReturnType<typeof watch> | null = null;
 
 const renderPage = async () => {
-  if (!canvas.value) return;
+  if (!canvas.value) {
+    console.error("Canvas element is not available");
+    return;
+  }
+
+  if (renderTask) {
+    renderTask.cancel();
+    renderTask = null;
+    console.trace("Cancelled previous render task");
+  }
 
   const page = await props.getPage(props.pageNum);
   if (!page) {
@@ -60,39 +70,26 @@ const renderPage = async () => {
     canvasContext: context,
     viewport: viewport,
   });
-
   await renderTask.promise;
+
+  renderTask = null;
 };
 
 onMounted(async () => {
   await renderPage();
+  watchHandle = watch(() => [props.pageNum, props.zoomMode, props.customZoom, props.containerWidth, props.containerHeight], renderPage);
 });
 
-onUnmounted(() => {
+onBeforeUnmount(() => {
+  if (watchHandle) {
+    watchHandle.stop();
+    watchHandle = null;
+  }
+
   // Cancel any ongoing render operation
   if (renderTask) {
     renderTask.cancel();
     renderTask = null;
   }
 });
-
-watch(
-  () => [props.pageNum, props.zoomMode, props.customZoom, props.containerWidth, props.containerHeight],
-  async () => {
-    await renderPage();
-  }
-);
 </script>
-
-<style scoped>
-.pdf-canvas-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-canvas {
-  max-width: 100%;
-  height: auto;
-}
-</style>

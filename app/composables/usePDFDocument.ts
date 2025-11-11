@@ -11,6 +11,7 @@ export const usePDFDocument = () => {
 
   // Load PDF from file
   const loadPDF = async (file: File) => {
+    console.log("Loading PDF:", file.name);
     if (!import.meta.client) return;
 
     isLoading.value = true;
@@ -41,7 +42,12 @@ export const usePDFDocument = () => {
 
   // Get a specific page
   const getPage = async (pageNum: number) => {
-    if (!pdfDoc || pageNum < 1 || pageNum > numPages.value) {
+    if (!pdfDoc) {
+      console.warn("PDF document is not loaded yet.");
+      return null;
+    }
+    if (pageNum < 1 || pageNum > numPages.value) {
+      console.warn("Failed to get page: invalid page number", pageNum);
       return null;
     }
     return await pdfDoc.getPage(pageNum);

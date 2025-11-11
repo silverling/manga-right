@@ -72,7 +72,8 @@
         </button>
       </div>
 
-      <div v-for="pageNum in pagesToDisplay" :key="pageNum" :style="{ marginLeft: halfGap + 'px', marginRight: halfGap + 'px' }">
+      <!-- Use index as key to avoid component recreation -->
+      <div v-for="(pageNum, index) in pagesToDisplay" :key="index" :style="{ marginLeft: halfGap + 'px', marginRight: halfGap + 'px' }">
         <PDFCanvas
           :page-num="pageNum"
           :get-page="getPage"
@@ -151,7 +152,10 @@ const activityHandler = () => resetIdleTimer();
 
 // Calculate container width for fit-width zoom
 const updateContainerWidth = () => {
-  if (!viewerContainer.value) return;
+  if (!viewerContainer.value) {
+    console.error("Viewer container is not available");
+    return;
+  }
 
   const width = viewerContainer.value.clientWidth - 64;
   const height = viewerContainer.value.clientHeight - 64;
@@ -186,11 +190,12 @@ const handleKeydown = (event: KeyboardEvent) => {
   }
 };
 
+onBeforeMount(async () => {
+  await loadPDF(props.file);
+});
+
 // Load PDF on mount
 onMounted(async () => {
-  await loadPDF(props.file);
-  updateContainerWidth();
-
   window.addEventListener("resize", updateContainerWidth);
   window.addEventListener("keydown", handleKeydown);
   // activity listeners for idle detection - only mousemove shows UI
@@ -210,10 +215,7 @@ onUnmounted(() => {
   }
 });
 
-// Watch for view mode changes
-watch(viewMode, () => {
-  updateContainerWidth();
-});
+watch([viewMode, zoomMode, viewerContainer], updateContainerWidth);
 
 // Reset idle timer when fullscreen changes
 watch(isFullScreen, (newVal) => {
